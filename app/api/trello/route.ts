@@ -11,8 +11,8 @@ const CARD_ASSIGNEES: Record<string, string | null> = {
   図面作成ライト: "68f855c5926d9902d51625ad", // harumichi shimoda
   本図面: null, // 割当無し
   "書類(特定/水質etc)": "65509e2e84d03bffe0151207", // Aidien Ramezani
-  見積もり依頼: null, // 割当無し
-  契約書作成: null, // 割当無し
+  見積もり依頼: "5d6cf098db985d3dab0b4b3b", // Masaki Okamura
+  契約書作成: "5d6cf098db985d3dab0b4b3b", // Masaki Okamura
 }
 
 export async function POST(request: NextRequest) {
