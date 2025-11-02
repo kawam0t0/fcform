@@ -111,6 +111,59 @@ const CARD_LABEL_MAPPING: Record<string, string> = {
   新店舗での実務: "purple",
 }
 
+const CARD_CHECKLISTS: Record<string, string[]> = {
+  洗車機発注: ["洗車機仕様確認", "関連機器確認", "マットクリーナー", "スペアパーツリスト"],
+  キュービクル発注: ["キュービクル仕様確認"],
+  "洗車機搬入連絡@伊佐": ["女屋さん(伊佐建設)電話", "日程が分かり次第安藤さんへ"],
+  "ラフター手配@伊佐": ["内山クレーン（内山さん）へ電話"],
+  阪神ロジ依頼: ["メールにて送る", "LivからPL/BL/PIをもらう"],
+  洗車機搬入連絡: ["女屋さん(伊佐建設)電話", "日程が分かり次第安藤さんへ"],
+  ガラス屋手配: ["マキヤマ（櫻井さん）へ電話"],
+  ラッピング発注: ["大木さんへ電話"],
+  コーキング屋さんへ依頼: ["佐々木さんへ電話"],
+  "ラフター手配@候補地": ["内山クレーン（内山さん）へ電話"],
+  "トラック手配＠候補地": ["美心（新井さん）へ電話"],
+  コンプレッサー発注: ["下田さんへ発注依頼"],
+  エアードライヤー発注: ["下田さんへ発注依頼"],
+  設営協力業者へ依頼: ["下田さん/女屋さん/吉田さん"],
+  ハイロック: ["HP変更の連絡"],
+  事務所場内の誘導ライン: ["雨宮さんへ図面送付"],
+  アルミ合板: ["料金表看板", "利用規約看板", "出口看板", "タオル看板"],
+  MCステッカー: ["1セット", "発注", "納期確認"],
+  サブスクカード: ["3000枚"],
+  コースシール: ["プレ2500枚", "プラス1000枚", "ナイ1000枚", "セラ1000枚"],
+  サブスクフライヤー: ["1000枚"],
+  ポイントカード: ["2000枚"],
+  利用規約: ["2500枚"],
+  新規販促物: ["横断幕", "各種指示看板", "豆腐看板", "アパレル", "39用フライヤー", "のぼり", "事務所シール"],
+  運営備品手配: [
+    "https://docs.google.com/spreadsheets/d/1Axw-xl56HQuPugajb4F3sNAN6htw7PinSxVvCpACmZA/edit?usp=sharing",
+  ],
+  スクエアレジ購入: ["ターミナル", "ドロワー", "ハブ"],
+  Googleアカウント: ["アカウント作成", "chatスペース作成"],
+  DialPad: ["プラン選定", "申し込み", "発番"],
+  Instagram: ["アカウント開設"],
+  Squareアカウント: ["アカウント開設", "リテール開設", "電子マネー申請", "商品名追加", "レシート等の設定"],
+  GoogleMap: ["アカウント開設"],
+  エアシフト: ["アカウント開設", "シフトボード連携"],
+  インスタ広告: ["動画作成", "展開"],
+  インフルエンサー: ["内容打ち合わせ", "展開"],
+  "PR Times": ["投稿文作成", "入稿", "展開"],
+  チラシ: ["デザイン作成", "入稿", "配布"],
+  地元メディア掲載: ["内容打ち合わせ", "展開"],
+  群ラボ: ["内容打ち合わせ", "展開"],
+  社員採用準備: ["内容打ち合わせ", "文章作成"],
+  社員面接: ["社員面接"],
+  社員採用: ["社員採用"],
+  アルバイト採用準備: ["内容打ち合わせ", "文章作成"],
+  アルバイト面接: ["アルバイト面接"],
+  アルバイト採用: ["アルバイト採用"],
+  座学: ["どこで実施か", "誰に座学するのか", "何を教えるのか", "誰が研修するのか", "資料作成"],
+  既存店舗での実務: ["どこで実施か", "誰が研修するのか"],
+  設営: ["誰が設営参加か", "設営スケジュール"],
+  新店舗での実務: ["新店舗での実務"],
+}
+
 export async function GET() {
   console.log("[v0] Webhook GET request received")
   return NextResponse.json({
@@ -204,6 +257,34 @@ export async function POST(request: NextRequest) {
               console.log(`[v0] ラベル付与成功: ${title} → ${labelColor}`)
             } else {
               console.error(`[v0] ラベル付与失敗: ${title}`)
+            }
+          }
+
+          const checklistItems = CARD_CHECKLISTS[title]
+          if (checklistItems && checklistItems.length > 0) {
+            const checklistResponse = await fetch(
+              `https://api.trello.com/1/checklists?idCard=${newCard.id}&name=タスク&key=${TRELLO_API_KEY}&token=${TRELLO_TOKEN}`,
+              { method: "POST" },
+            )
+
+            if (checklistResponse.ok) {
+              const checklist = await checklistResponse.json()
+              console.log(`[v0] チェックリスト作成成功: ${title}`)
+
+              for (const item of checklistItems) {
+                const checkItemResponse = await fetch(
+                  `https://api.trello.com/1/checklists/${checklist.id}/checkItems?name=${encodeURIComponent(item)}&key=${TRELLO_API_KEY}&token=${TRELLO_TOKEN}`,
+                  { method: "POST" },
+                )
+
+                if (checkItemResponse.ok) {
+                  console.log(`[v0] チェック項目追加成功: ${item}`)
+                } else {
+                  console.error(`[v0] チェック項目追加失敗: ${item}`)
+                }
+              }
+            } else {
+              console.error(`[v0] チェックリスト作成失敗: ${title}`)
             }
           }
         } else {
