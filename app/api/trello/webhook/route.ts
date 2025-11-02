@@ -55,8 +55,17 @@ const CARD_TITLES = [
   "新店舗での実務",
 ]
 
+export async function GET() {
+  console.log("[v0] Webhook GET request received")
+  return NextResponse.json({
+    status: "ok",
+    message: "Webhook endpoint is ready",
+  })
+}
+
 export async function HEAD() {
   // Trello Webhookの検証用
+  console.log("[v0] Webhook HEAD request received")
   return new Response(null, { status: 200 })
 }
 
@@ -64,26 +73,22 @@ export async function POST(request: NextRequest) {
   try {
     const payload = await request.json()
 
-    console.log("[v0] Webhook受信:", payload.action?.type)
+    console.log("[v0] ===== Webhook受信 =====")
+    console.log("[v0] アクションタイプ:", payload.action?.type)
+    console.log("[v0] カード名:", payload.action?.data?.card?.name)
+    console.log("[v0] ラベル情報:", payload.action?.data?.label)
+    console.log("[v0] ========================")
 
-    // カードが完了状態になったことを検知
     if (
-      payload.action?.type === "updateCard" &&
-      payload.action?.data?.card?.dueComplete === true &&
-      payload.action?.data?.card?.name === "契約書作成"
+      payload.action?.type === "addLabelToCard" &&
+      payload.action?.data?.card?.name === "契約書作成" &&
+      payload.action?.data?.label?.color === "green" &&
+      payload.action?.data?.label?.name === "完了"
     ) {
-      console.log("[v0] 契約書作成カードが完了しました")
+      console.log("[v0] 契約書作成カードに完了ラベルが追加されました")
 
       const card = payload.action.data.card
-      const oldCard = payload.action.data.old
 
-      // 既に完了していた場合はスキップ（重複防止）
-      if (oldCard?.dueComplete === true) {
-        console.log("[v0] 既に完了済みのため、スキップします")
-        return NextResponse.json({ message: "Already completed" })
-      }
-
-      // カードの詳細情報を取得
       const cardDetailsResponse = await fetch(
         `https://api.trello.com/1/cards/${card.id}?key=${TRELLO_API_KEY}&token=${TRELLO_TOKEN}`,
       )
@@ -94,7 +99,6 @@ export async function POST(request: NextRequest) {
 
       const cardDetails = await cardDetailsResponse.json()
 
-      // リスト名を取得（プロジェクト名）
       const listResponse = await fetch(
         `https://api.trello.com/1/lists/${cardDetails.idList}?key=${TRELLO_API_KEY}&token=${TRELLO_TOKEN}`,
       )
@@ -108,7 +112,6 @@ export async function POST(request: NextRequest) {
 
       console.log("[v0] プロジェクト名:", projectName)
 
-      // 別のボードに同じ名前のリストを作成
       const newListResponse = await fetch(
         `https://api.trello.com/1/lists?name=${encodeURIComponent(projectName)}&idBoard=${TARGET_BOARD_ID}&key=${TRELLO_API_KEY}&token=${TRELLO_TOKEN}`,
         { method: "POST" },
