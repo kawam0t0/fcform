@@ -55,6 +55,62 @@ const CARD_TITLES = [
   "新店舗での実務",
 ]
 
+const CARD_LABEL_MAPPING: Record<string, string> = {
+  // 連携系（green）
+  洗車機発注: "green",
+  キュービクル発注: "green",
+  "洗車機搬入連絡@伊佐": "green",
+  "ラフター手配@伊佐": "green",
+  阪神ロジ依頼: "green",
+  洗車機搬入連絡: "green",
+  ガラス屋手配: "green",
+  ラッピング発注: "green",
+  コーキング屋さんへ依頼: "green",
+  "ラフター手配@候補地": "green",
+  "トラック手配＠候補地": "green",
+  コンプレッサー発注: "green",
+  エアードライヤー発注: "green",
+  設営協力業者へ依頼: "green",
+  ハイロック: "green",
+  事務所場内の誘導ライン: "green",
+  // 販促物備品系（yellow）
+  アルミ合板: "yellow",
+  MCステッカー: "yellow",
+  サブスクカード: "yellow",
+  コースシール: "yellow",
+  サブスクフライヤー: "yellow",
+  ポイントカード: "yellow",
+  利用規約: "yellow",
+  新規販促物: "yellow",
+  運営備品手配: "yellow",
+  スクエアレジ購入: "yellow",
+  // 通信系（orange）
+  Googleアカウント: "orange",
+  DialPad: "orange",
+  Instagram: "orange",
+  Squareアカウント: "orange",
+  GoogleMap: "orange",
+  エアシフト: "orange",
+  // プロモーション系（red）
+  インスタ広告: "red",
+  インフルエンサー: "red",
+  "PR Times": "red",
+  チラシ: "red",
+  地元メディア掲載: "red",
+  群ラボ: "red",
+  // 人事系（purple）
+  社員採用準備: "purple",
+  社員面接: "purple",
+  社員採用: "purple",
+  アルバイト採用準備: "purple",
+  アルバイト面接: "purple",
+  アルバイト採用: "purple",
+  座学: "purple",
+  既存店舗での実務: "purple",
+  設営: "purple",
+  新店舗での実務: "purple",
+}
+
 export async function GET() {
   console.log("[v0] Webhook GET request received")
   return NextResponse.json({
@@ -136,6 +192,20 @@ export async function POST(request: NextRequest) {
           const newCard = await newCardResponse.json()
           createdCards.push(newCard.id)
           console.log("[v0] カード作成成功:", title)
+
+          const labelColor = CARD_LABEL_MAPPING[title]
+          if (labelColor) {
+            const labelResponse = await fetch(
+              `https://api.trello.com/1/cards/${newCard.id}/labels?color=${labelColor}&key=${TRELLO_API_KEY}&token=${TRELLO_TOKEN}`,
+              { method: "POST" },
+            )
+
+            if (labelResponse.ok) {
+              console.log(`[v0] ラベル付与成功: ${title} → ${labelColor}`)
+            } else {
+              console.error(`[v0] ラベル付与失敗: ${title}`)
+            }
+          }
         } else {
           console.error("[v0] カード作成失敗:", title)
         }
