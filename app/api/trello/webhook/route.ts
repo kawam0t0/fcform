@@ -2,113 +2,65 @@ import { type NextRequest, NextResponse } from "next/server"
 
 const TRELLO_API_KEY = process.env.TRELLO_API_KEY
 const TRELLO_TOKEN = process.env.TRELLO_TOKEN
-const TARGET_BOARD_ID = "6906c2a91d3d2a7086fc95f2" // 契約〜OPEN ボード
 
-const CARD_TITLES = [
-  "洗車機発注",
-  "キュービクル発注",
-  "洗車機搬入連絡@伊佐",
-  "ラフター手配@伊佐",
-  "阪神ロジ依頼",
-  "洗車機搬入連絡",
-  "ガラス屋手配",
-  "ラッピング発注",
-  "コーキング屋さんへ依頼",
-  "ラフター手配@候補地",
-  "トラック手配＠候補地",
-  "コンプレッサー発注",
-  "エアードライヤー発注",
-  "設営協力業者へ依頼",
-  "ハイロック",
-  "事務所場内の誘導ライン",
-  "アルミ合板",
-  "MCステッカー",
-  "サブスクカード",
-  "コースシール",
-  "サブスクフライヤー",
-  "ポイントカード",
-  "利用規約",
-  "新規販促物",
-  "運営備品手配",
-  "スクエアレジ購入",
-  "Googleアカウント",
-  "DialPad",
-  "Instagram",
-  "Squareアカウント",
-  "GoogleMap",
-  "エアシフト",
-  "インスタ広告",
-  "インフルエンサー",
-  "PR Times",
-  "チラシ",
-  "地元メディア掲載",
-  "群ラボ",
-  "社員採用準備",
-  "社員面接",
-  "社員採用",
-  "アルバイト採用準備",
-  "アルバイト面接",
-  "アルバイト採用",
-  "座学",
-  "既存店舗での実務",
-  "設営",
-  "新店舗での実務",
+const DEFAULT_MEMBERS = [
+  "65509e2e84d03bffe0151207", // Aidien Ramezani
+  "5d6cf098db985d3dab0b4b3b", // Masaki Okamura
 ]
 
-const CARD_LABEL_MAPPING: Record<string, string> = {
-  // 連携系（green）
-  洗車機発注: "green",
-  キュービクル発注: "green",
-  "洗車機搬入連絡@伊佐": "green",
-  "ラフター手配@伊佐": "green",
-  阪神ロジ依頼: "green",
-  洗車機搬入連絡: "green",
-  ガラス屋手配: "green",
-  ラッピング発注: "green",
-  コーキング屋さんへ依頼: "green",
-  "ラフター手配@候補地": "green",
-  "トラック手配＠候補地": "green",
-  コンプレッサー発注: "green",
-  エアードライヤー発注: "green",
-  設営協力業者へ依頼: "green",
-  ハイロック: "green",
-  事務所場内の誘導ライン: "green",
-  // 販促物備品系（yellow）
-  アルミ合板: "yellow",
-  MCステッカー: "yellow",
-  サブスクカード: "yellow",
-  コースシール: "yellow",
-  サブスクフライヤー: "yellow",
-  ポイントカード: "yellow",
-  利用規約: "yellow",
-  新規販促物: "yellow",
-  運営備品手配: "yellow",
-  スクエアレジ購入: "yellow",
-  // 通信系（orange）
-  Googleアカウント: "orange",
-  DialPad: "orange",
-  Instagram: "orange",
-  Squareアカウント: "orange",
-  GoogleMap: "orange",
-  エアシフト: "orange",
-  // プロモーション系（red）
-  インスタ広告: "red",
-  インフルエンサー: "red",
-  "PR Times": "red",
-  チラシ: "red",
-  地元メディア掲載: "red",
-  群ラボ: "red",
-  // 人事系（purple）
-  社員採用準備: "purple",
-  社員面接: "purple",
-  社員採用: "purple",
-  アルバイト採用準備: "purple",
-  アルバイト面接: "purple",
-  アルバイト採用: "purple",
-  座学: "purple",
-  既存店舗での実務: "purple",
-  設営: "purple",
-  新店舗での実務: "purple",
+const LIST_CARDS = {
+  連携系: [
+    "洗車機発注",
+    "キュービクル発注",
+    "洗車機搬入連絡@伊佐",
+    "ラフター手配@伊佐",
+    "阪神ロジ依頼",
+    "洗車機搬入連絡",
+    "ガラス屋手配",
+    "ラッピング発注",
+    "コーキング屋さんへ依頼",
+    "ラフター手配@候補地",
+    "トラック手配＠候補地",
+    "コンプレッサー発注",
+    "エアードライヤー発注",
+    "設営協力業者へ依頼",
+    "ハイロック",
+    "事務所場内の誘導ライン",
+  ],
+  販促物備品系: [
+    "アルミ合板",
+    "MCステッカー",
+    "サブスクカード",
+    "コースシール",
+    "サブスクフライヤー",
+    "ポイントカード",
+    "利用規約",
+    "新規販促物",
+    "運営備品手配",
+    "スクエアレジ購入",
+  ],
+  通信系: ["Googleアカウント", "DialPad", "Instagram", "Squareアカウント", "GoogleMap", "エアシフト"],
+  プロモーション系: ["インスタ広告", "インフルエンサー", "PR Times", "チラシ", "地元メディア掲載", "群ラボ"],
+  人事系: [
+    "社員採用準備",
+    "社員面接",
+    "社員採用",
+    "アルバイト採用準備",
+    "アルバイト面接",
+    "アルバイト採用",
+    "座学",
+    "既存店舗での実務",
+    "設営",
+    "新店舗での実務",
+  ],
+}
+
+const LIST_LABEL_COLORS: Record<string, string> = {
+  連携系: "green",
+  販促物備品系: "yellow",
+  通信系: "orange",
+  プロモーション系: "red",
+  人事系: "purple",
 }
 
 const CARD_CHECKLISTS: Record<string, string[]> = {
@@ -173,7 +125,6 @@ export async function GET() {
 }
 
 export async function HEAD() {
-  // Trello Webhookの検証用
   console.log("[v0] Webhook HEAD request received")
   return new Response(null, { status: 200 })
 }
@@ -221,84 +172,122 @@ export async function POST(request: NextRequest) {
 
       console.log("[v0] プロジェクト名:", projectName)
 
-      const newListResponse = await fetch(
-        `https://api.trello.com/1/lists?name=${encodeURIComponent(projectName)}&idBoard=${TARGET_BOARD_ID}&key=${TRELLO_API_KEY}&token=${TRELLO_TOKEN}`,
+      const newBoardResponse = await fetch(
+        `https://api.trello.com/1/boards/?name=${encodeURIComponent(projectName)}&key=${TRELLO_API_KEY}&token=${TRELLO_TOKEN}`,
         { method: "POST" },
       )
 
-      if (!newListResponse.ok) {
-        const errorText = await newListResponse.text()
-        throw new Error(`新しいリストの作成に失敗しました: ${errorText}`)
+      if (!newBoardResponse.ok) {
+        const errorText = await newBoardResponse.text()
+        throw new Error(`新しいボードの作成に失敗しました: ${errorText}`)
       }
 
-      const newList = await newListResponse.json()
-      console.log("[v0] 新しいリスト作成成功:", newList.id)
+      const newBoard = await newBoardResponse.json()
+      console.log("[v0] 新しいボード作成成功:", newBoard.id, newBoard.name)
 
-      const createdCards = []
-      for (const title of CARD_TITLES) {
-        const newCardResponse = await fetch(
-          `https://api.trello.com/1/cards?idList=${newList.id}&name=${encodeURIComponent(title)}&key=${TRELLO_API_KEY}&token=${TRELLO_TOKEN}`,
-          { method: "POST" },
+      for (const memberId of DEFAULT_MEMBERS) {
+        const addMemberResponse = await fetch(
+          `https://api.trello.com/1/boards/${newBoard.id}/members/${memberId}?type=normal&key=${TRELLO_API_KEY}&token=${TRELLO_TOKEN}`,
+          { method: "PUT" },
         )
 
-        if (newCardResponse.ok) {
-          const newCard = await newCardResponse.json()
-          createdCards.push(newCard.id)
-          console.log("[v0] カード作成成功:", title)
-
-          const labelColor = CARD_LABEL_MAPPING[title]
-          if (labelColor) {
-            const labelResponse = await fetch(
-              `https://api.trello.com/1/cards/${newCard.id}/labels?color=${labelColor}&key=${TRELLO_API_KEY}&token=${TRELLO_TOKEN}`,
-              { method: "POST" },
-            )
-
-            if (labelResponse.ok) {
-              console.log(`[v0] ラベル付与成功: ${title} → ${labelColor}`)
-            } else {
-              console.error(`[v0] ラベル付与失敗: ${title}`)
-            }
-          }
-
-          const checklistItems = CARD_CHECKLISTS[title]
-          if (checklistItems && checklistItems.length > 0) {
-            const checklistResponse = await fetch(
-              `https://api.trello.com/1/checklists?idCard=${newCard.id}&name=タスク&key=${TRELLO_API_KEY}&token=${TRELLO_TOKEN}`,
-              { method: "POST" },
-            )
-
-            if (checklistResponse.ok) {
-              const checklist = await checklistResponse.json()
-              console.log(`[v0] チェックリスト作成成功: ${title}`)
-
-              for (const item of checklistItems) {
-                const checkItemResponse = await fetch(
-                  `https://api.trello.com/1/checklists/${checklist.id}/checkItems?name=${encodeURIComponent(item)}&key=${TRELLO_API_KEY}&token=${TRELLO_TOKEN}`,
-                  { method: "POST" },
-                )
-
-                if (checkItemResponse.ok) {
-                  console.log(`[v0] チェック項目追加成功: ${item}`)
-                } else {
-                  console.error(`[v0] チェック項目追加失敗: ${item}`)
-                }
-              }
-            } else {
-              console.error(`[v0] チェックリスト作成失敗: ${title}`)
-            }
-          }
+        if (addMemberResponse.ok) {
+          console.log(`[v0] メンバー追加成功: ${memberId}`)
         } else {
-          console.error("[v0] カード作成失敗:", title)
+          console.error(`[v0] メンバー追加失敗: ${memberId}`)
         }
       }
 
-      console.log("[v0] 合計", createdCards.length, "枚のカードを作成しました")
+      const boardListsResponse = await fetch(
+        `https://api.trello.com/1/boards/${newBoard.id}/lists?key=${TRELLO_API_KEY}&token=${TRELLO_TOKEN}`,
+      )
+
+      if (boardListsResponse.ok) {
+        const defaultLists = await boardListsResponse.json()
+        for (const list of defaultLists) {
+          await fetch(
+            `https://api.trello.com/1/lists/${list.id}/closed?value=true&key=${TRELLO_API_KEY}&token=${TRELLO_TOKEN}`,
+            { method: "PUT" },
+          )
+        }
+        console.log("[v0] デフォルトリストをアーカイブしました")
+      }
+
+      let totalCardsCreated = 0
+
+      for (const [listName, cardTitles] of Object.entries(LIST_CARDS)) {
+        console.log(`[v0] リスト「${listName}」を作成中...`)
+
+        const newListResponse = await fetch(
+          `https://api.trello.com/1/lists?name=${encodeURIComponent(listName)}&idBoard=${newBoard.id}&key=${TRELLO_API_KEY}&token=${TRELLO_TOKEN}`,
+          { method: "POST" },
+        )
+
+        if (!newListResponse.ok) {
+          console.error(`[v0] リスト作成失敗: ${listName}`)
+          continue
+        }
+
+        const newList = await newListResponse.json()
+        console.log(`[v0] リスト作成成功: ${listName} (${newList.id})`)
+
+        const labelColor = LIST_LABEL_COLORS[listName]
+
+        for (const title of cardTitles) {
+          const newCardResponse = await fetch(
+            `https://api.trello.com/1/cards?idList=${newList.id}&name=${encodeURIComponent(title)}&key=${TRELLO_API_KEY}&token=${TRELLO_TOKEN}`,
+            { method: "POST" },
+          )
+
+          if (newCardResponse.ok) {
+            const newCard = await newCardResponse.json()
+            totalCardsCreated++
+            console.log(`[v0] カード作成成功: ${title}`)
+
+            if (labelColor) {
+              const labelResponse = await fetch(
+                `https://api.trello.com/1/cards/${newCard.id}/labels?color=${labelColor}&key=${TRELLO_API_KEY}&token=${TRELLO_TOKEN}`,
+                { method: "POST" },
+              )
+
+              if (labelResponse.ok) {
+                console.log(`[v0] ラベル付与成功: ${title} → ${labelColor}`)
+              }
+            }
+
+            const checklistItems = CARD_CHECKLISTS[title]
+            if (checklistItems && checklistItems.length > 0) {
+              const checklistResponse = await fetch(
+                `https://api.trello.com/1/checklists?idCard=${newCard.id}&name=タスク&key=${TRELLO_API_KEY}&token=${TRELLO_TOKEN}`,
+                { method: "POST" },
+              )
+
+              if (checklistResponse.ok) {
+                const checklist = await checklistResponse.json()
+
+                for (const item of checklistItems) {
+                  await fetch(
+                    `https://api.trello.com/1/checklists/${checklist.id}/checkItems?name=${encodeURIComponent(item)}&key=${TRELLO_API_KEY}&token=${TRELLO_TOKEN}`,
+                    { method: "POST" },
+                  )
+                }
+                console.log(`[v0] チェックリスト追加成功: ${title}`)
+              }
+            }
+          } else {
+            console.error(`[v0] カード作成失敗: ${title}`)
+          }
+        }
+      }
+
+      console.log(`[v0] ボード「${projectName}」に合計${totalCardsCreated}枚のカードを作成しました`)
 
       return NextResponse.json({
         success: true,
-        message: `新しいボードにリスト「${projectName}」と${createdCards.length}枚のカードを作成しました`,
-        newListId: newList.id,
-        createdCardsCount: createdCards.length,
+        message: `新しいボード「${projectName}」を作成し、${totalCardsCreated}枚のカードを作成しました`,
+        newBoardId: newBoard.id,
+        newBoardUrl: newBoard.url,
+        createdCardsCount: totalCardsCreated,
       })
     }
 
