@@ -172,6 +172,33 @@ export async function POST(request: NextRequest) {
 
       console.log("[v0] プロジェクト名:", projectName)
 
+      console.log("[v0] 既存のボードを確認中...")
+      const existingBoardsResponse = await fetch(
+        `https://api.trello.com/1/members/me/boards?key=${TRELLO_API_KEY}&token=${TRELLO_TOKEN}`,
+      )
+
+      if (!existingBoardsResponse.ok) {
+        throw new Error("既存ボードの取得に失敗しました")
+      }
+
+      const existingBoards = await existingBoardsResponse.json()
+      const duplicateBoard = existingBoards.find(
+        (board: { name: string; closed: boolean }) => board.name === projectName && !board.closed,
+      )
+
+      if (duplicateBoard) {
+        console.log(`[v0] ボード「${projectName}」は既に存在します。作成をスキップします。`)
+        return NextResponse.json({
+          success: false,
+          message: `ボード「${projectName}」は既に存在するため、作成をスキップしました`,
+          existingBoardId: duplicateBoard.id,
+          existingBoardUrl: duplicateBoard.url,
+        })
+      }
+
+      console.log(`[v0] ボード「${projectName}」は存在しないため、新規作成します`)
+      // </CHANGE>
+
       const newBoardResponse = await fetch(
         `https://api.trello.com/1/boards/?name=${encodeURIComponent(projectName)}&key=${TRELLO_API_KEY}&token=${TRELLO_TOKEN}`,
         { method: "POST" },
